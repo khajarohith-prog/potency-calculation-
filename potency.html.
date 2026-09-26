@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>API & Drug Product Potency Calculator</title>
+
+  <!-- PWA & Mobile Home Screen Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Potency Calc">
+  <meta name="application-name" content="Potency Calc">
+  <meta name="theme-color" content="#0284c7">
+
+  <!-- Home Screen Icons -->
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/laboratory.png">
+  <link rel="icon" type="image/png" href="https://img.icons8.com/color/96/laboratory.png">
+
+  <!-- html2pdf Library for direct local PDF downloads -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --primary-color: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #cbd5e1;
+      --accent-green: #16a34a;
+      --radius: 12px;
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* App Header */
+    .app-header {
+      background: var(--primary-gradient);
+      color: #ffffff;
+      padding: 24px 20px;
+      border-radius: var(--radius);
+      text-align: center;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .app-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .app-header p {
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    /* Input Sections */
+    .section-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background-color: #f8fafc;
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-group input {
+      flex: 1;
+    }
+
+    .input-group select {
+      width: 85px;
+    }
+
+    /* Live Output Summary Box */
+    .live-result-card {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .live-result-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #166534;
+      margin-bottom: 4px;
+    }
+
+    .live-result-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent-green);
+    }
+
+    /* Action Buttons */
+    .btn-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.1s ease, background-color 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+
+    /* Report Section Styling (Hidden until generated) */
+    #reportSection {
+      display: none;
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+      border: 2px solid var(--primary-color);
+    }
+
+    .report-header {
+      border-bottom: 2px solid var(--primary-dark);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .report-header h2 {
+      color: var(--primary-dark);
+      font-size: 1.4rem;
+      text-transform: uppercase;
+    }
+
+    .report-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .report-table th, .report-table td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    .report-table th {
+      background-color: #f1f5f9;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .report-summary-box {
+      background-color: #f0fdf4;
+      border: 1px solid #86efac;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    .report-summary-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #166534;
+      margin-bottom: 6px;
+    }
+
+    .report-final-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #15803d;
+    }
+
+    .report-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn-success {
+      background-color: var(--accent-green);
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #64748b;
+      color: white;
+    }
+
+    /* Printable specific rules */
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+      .app-header, .section-card, .live-result-card, .btn-container, .report-actions {
+        display: none !important;
+      }
+      #reportSection {
+        display: block !important;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Header -->
+    <div class="app-header">
+      <h1>API & Drug Product Potency Calculator</h1>
+      <p>Automated Analytical & Pharmacopeial Potency Computation</p>
+    </div>
+
+    <!-- Form Section 1: Metadata -->
+    <div class="section-card">
+      <div class="section-title">1. Sample Identification</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="drugName">Drug / API Name</label>
+          <input type="text" id="drugName" list="drugOptions" placeholder="Select or type API name..." oninput="calculateLivePotency()">
+          <datalist id="drugOptions">
+            <option value="Paracetamol API"></option>
+            <option value="Metformin Hydrochloride"></option>
+            <option value="Carfilzomib API"></option>
+            <option value="Betadex Sodium Injection"></option>
+            <option value="Atorvastatin Calcium"></option>
+          </datalist>
+        </div>
+
+        <div class="form-group">
+          <label for="batchNo">Batch Number</label>
+          <input type="text" id="batchNo" placeholder="e.g. BATCH-2026-001" oninput="calculateLivePotency()">
+        </div>
+
+        <div class="form-group">
+          <label for="project">Project Name / Code</label>
+          <input type="text" id="project" placeholder="e.g. PRJ-ANALYTICAL-09" oninput="calculateLivePotency()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Section 2: Input Parameters -->
+    <div class="section-card">
+      <div class="section-title">2. Analytical Test Results</div>
+      <div class="form-grid">
+        
+        <div class="form-group">
+          <label for="totalImpurities">Total Impurities by HPLC (%)</label>
+          <input type="number" id="totalImpurities" step="0.001" min="0" max="100" placeholder="0.00" oninput="calculateLivePotency()">
+        </div>
+
+        <div class="form-group">
+          <label for="waterLod">Water Content / LOD (%)</label>
+          <input type="number" id="waterLod" step="0.001" min="0" placeholder="0.00" oninput="calculateLivePotency()">
+        </div>
+
+        <div class="form-group">
+          <label for="roi">Residue on Ignition (ROI) (%)</label>
+          <input type="number" id="roi" step="0.001" min="0" placeholder="0.00" oninput="calculateLivePotency()">
+        </div>
+
+        <div class="form-group">
+          <label>Residual Solvent by GC</label>
+          <div class="input-group">
+            <input type="number" id="residualSolvent" step="0.001" min="0" placeholder="0.00" oninput="calculateLivePotency()">
+            <select id="solventUnit" onchange="calculateLivePotency()">
+              <option value="%">%</option>
+              <option value="ppm">ppm</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="inorganics">Inorganics / Salt Content (%)</label>
+          <input type="number" id="inorganics" step="0.001" min="0" placeholder="0.00" oninput="calculateLivePotency()">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Live Preview Card -->
+    <div class="live-result-card">
+      <div class="live-result-title">Live Calculated Potency (As-Is Basis)</div>
+      <div class="live-result-value" id="livePotencyVal">0.00 %</div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="btn-container">
+      <button class="btn btn-primary" onclick="generateReport()">📄 Generate Final Report</button>
+    </div>
+
+    <!-- Final Printable & Downloadable Report Section -->
+    <div id="reportSection">
+      <div class="report-header">
+        <h2>Certificate of Potency Analysis</h2>
+        <p>Analytical Data & Potency Calculation Summary Report</p>
+      </div>
+
+      <!-- Metadata Table -->
+      <table class="report-table">
+        <tr>
+          <th>Drug / API Name:</th>
+          <td id="rptDrugName">-</td>
+          <th>Batch Number:</th>
+          <td id="rptBatchNo">-</td>
+        </tr>
+        <tr>
+          <th>Project:</th>
+          <td id="rptProject">-</td>
+          <th>Date:</th>
+          <td id="rptDate">-</td>
+        </tr>
+      </table>
+
+      <!-- Input Data Table -->
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Analytical Parameter</th>
+            <th>Reported Value</th>
+            <th>Normalized Value (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Total Impurities by HPLC</td>
+            <td id="rptRawImpurities">0.00 %</td>
+            <td id="rptChromPurity">Chrom. Purity: 100.00 %</td>
+          </tr>
+          <tr>
+            <td>Water Content / LOD</td>
+            <td id="rptWater">0.00 %</td>
+            <td id="rptWaterNorm">0.00 %</td>
+          </tr>
+          <tr>
+            <td>Residue on Ignition (ROI)</td>
+            <td id="rptRoi">0.00 %</td>
+            <td id="rptRoiNorm">0.00 %</td>
+          </tr>
+          <tr>
+            <td>Residual Solvent by GC</td>
+            <td id="rptSolventRaw">0.00 %</td>
+            <td id="rptSolventNorm">0.00 %</td>
+          </tr>
+          <tr>
+            <td>Inorganics / Salt Content</td>
+            <td id="rptInorganics">0.00 %</td>
+            <td id="rptInorganicsNorm">0.00 %</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Formula Breakdown Box -->
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 16px;">
+        <strong>Applied Calculation Formula:</strong><br>
+        <code>Potency (%) = [Chromatographic Purity] × (100 - [Water + ROI + Residual Solvent + Inorganics]) ÷ 100</code>
+      </div>
+
+      <!-- Final Calculated Result Box -->
+      <div class="report-summary-box">
+        <div class="report-summary-title">FINAL COMPUTED POTENCY:</div>
+        <div class="report-final-value" id="rptFinalPotency">0.00 %</div>
+      </div>
+
+      <!-- Report Export Actions -->
+      <div class="report-actions">
+        <button class="btn btn-success" onclick="downloadPDF()">💾 Save Report as PDF</button>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print Report</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function getCalculatedData() {
+      const drugName = document.getElementById('drugName').value || 'N/A';
+      const batchNo = document.getElementById('batchNo').value || 'N/A';
+      const project = document.getElementById('project').value || 'N/A';
+
+      const totalImpurities = parseFloat(document.getElementById('totalImpurities').value) || 0;
+      const waterLod = parseFloat(document.getElementById('waterLod').value) || 0;
+      const roi = parseFloat(document.getElementById('roi').value) || 0;
+      const rawSolvent = parseFloat(document.getElementById('residualSolvent').value) || 0;
+      const solventUnit = document.getElementById('solventUnit').value;
+      const inorganics = parseFloat(document.getElementById('inorganics').value) || 0;
+
+      // 1. Chromatographic Purity Formula: 100 - total impurities
+      const chromPurity = 100 - totalImpurities;
+
+      // 2. Residual Solvent Conversion: ppm / 10000 = %
+      let convertedSolvent = rawSolvent;
+      if (solventUnit === 'ppm') {
+        convertedSolvent = rawSolvent / 10000;
+      }
+
+      // 3. Sum of Non-Active Content
+      const totalNonActive = waterLod + roi + convertedSolvent + inorganics;
+
+      // 4. Final Potency Calculation
+      let finalPotency = (chromPurity * (100 - totalNonActive)) / 100;
+      if (finalPotency < 0) finalPotency = 0;
+
+      return {
+        drugName, batchNo, project,
+        totalImpurities, chromPurity,
+        waterLod, roi, rawSolvent, solventUnit, convertedSolvent, inorganics,
+        totalNonActive, finalPotency
+      };
+    }
+
+    function calculateLivePotency() {
+      const data = getCalculatedData();
+      document.getElementById('livePotencyVal').innerText = data.finalPotency.toFixed(2) + ' %';
+    }
+
+    function generateReport() {
+      const data = getCalculatedData();
+
+      document.getElementById('rptDrugName').innerText = data.drugName;
+      document.getElementById('rptBatchNo').innerText = data.batchNo;
+      document.getElementById('rptProject').innerText = data.project;
+      document.getElementById('rptDate').innerText = new Date().toLocaleDateString();
+
+      document.getElementById('rptRawImpurities').innerText = data.totalImpurities.toFixed(3) + ' %';
+      document.getElementById('rptChromPurity').innerText = 'Purity: ' + data.chromPurity.toFixed(3) + ' %';
+
+      document.getElementById('rptWater').innerText = data.waterLod.toFixed(3) + ' %';
+      document.getElementById('rptWaterNorm').innerText = data.waterLod.toFixed(3) + ' %';
+
+      document.getElementById('rptRoi').innerText = data.roi.toFixed(3) + ' %';
+      document.getElementById('rptRoiNorm').innerText = data.roi.toFixed(3) + ' %';
+
+      document.getElementById('rptSolventRaw').innerText = data.rawSolvent + ' ' + data.solventUnit;
+      document.getElementById('rptSolventNorm').innerText = data.convertedSolvent.toFixed(4) + ' %';
+
+      document.getElementById('rptInorganics').innerText = data.inorganics.toFixed(3) + ' %';
+      document.getElementById('rptInorganicsNorm').innerText = data.inorganics.toFixed(3) + ' %';
+
+      document.getElementById('rptFinalPotency').innerText = data.finalPotency.toFixed(2) + ' %';
+
+      const reportDiv = document.getElementById('reportSection');
+      reportDiv.style.display = 'block';
+      reportDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function downloadPDF() {
+      const data = getCalculatedData();
+      const reportElement = document.getElementById('reportSection');
+      const actions = reportElement.querySelector('.report-actions');
+      
+      actions.style.display = 'none';
+
+      const opt = {
+        margin:       [0.4, 0.4, 0.4, 0.4],
+        filename:     `Potency_Report_${data.drugName}_${data.batchNo}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(reportElement).save().then(() => {
+        actions.style.display = 'flex';
+      });
+    }
+
+    window.onload = calculateLivePotency;
+  </script>
+</body>
+</html>
